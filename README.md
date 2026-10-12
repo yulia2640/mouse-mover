@@ -1,7 +1,7 @@
 # Mouse Mover
 
 A tiny program that keeps your computer awake by nudging the mouse cursor
-every 30 seconds. It starts with Windows and waits quietly in the background.
+every 10 seconds. It starts with Windows and waits quietly in the background.
 
 | Action                       | What happens                       |
 | ---------------------------- | ---------------------------------- |

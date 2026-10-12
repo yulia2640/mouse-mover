@@ -17,7 +17,7 @@ from pynput import keyboard, mouse
 
 START_HOTKEY = "<ctrl>+<alt>+m"
 QUIT_HOTKEY = "<ctrl>+<alt>+q"
-INTERVAL_SECONDS = 30  # how often to nudge the mouse
+INTERVAL_SECONDS = 10  # how often to nudge the mouse
 NUDGE_PIXELS = 1       # how far to move it (it moves back right away)
 GRACE_SECONDS = 1      # ignore input right after starting (the hotkey itself)
 
