@@ -1,42 +1,37 @@
 # Mouse Mover
 
 A tiny program that keeps your computer awake by nudging the mouse cursor
-every 30 seconds. You switch it on and off with a keyboard shortcut.
+every 30 seconds. It starts with Windows and waits quietly in the background.
 
-| Hotkey         | Action                    |
-| -------------- | ------------------------- |
-| `Ctrl+Alt+M`   | Start / stop moving mouse |
-| `Ctrl+Alt+Q`   | Quit                      |
+| Action                       | What happens                       |
+| ---------------------------- | ---------------------------------- |
+| `Ctrl+Alt+M`                 | Start keeping the computer awake (high beep) |
+| Any mouse click or key press | Stop (low beep)                    |
+| `Ctrl+Alt+Q`                 | Quit the program completely        |
 
-The cursor moves 1 pixel and straight back, so you won't notice it while working.
-On Windows and macOS it also tells the system directly not to sleep.
+The cursor moves 1 pixel and straight back, so you won't notice it. It also
+tells Windows directly not to sleep or turn off the screen.
 
-## Setup
+## Install on Windows (starts automatically)
 
-1. Install [Python 3](https://www.python.org/downloads/) (on Windows, tick
-   "Add Python to PATH" in the installer).
-2. Install the one dependency:
+1. Install [Python 3](https://www.python.org/downloads/). In the installer,
+   tick **"Add Python to PATH"**.
+2. Download this folder and keep it somewhere permanent (e.g. `Documents\Mouse-mover`).
+3. Double-click **`install_startup.bat`**.
 
-   ```
-   pip install -r requirements.txt
-   ```
+That's it — it is running now and will start every time you log in.
+There is no window; listen for the beeps.
 
-## Run
+To remove it from startup, double-click **`uninstall_startup.bat`**.
+
+> If you move the folder later, run `install_startup.bat` again.
+
+## Run manually
 
 ```
+pip install -r requirements.txt
 python mouse_mover.py
 ```
-
-Leave the window open (you can minimize it), then press `Ctrl+Alt+M` to start.
-
-On Windows you can run it without a console window by double-clicking it after
-renaming it to `mouse_mover.pyw`.
-
-### macOS note
-
-The first time you run it, macOS will ask for permission. Allow your terminal
-(e.g. Terminal or iTerm) in **System Settings → Privacy & Security →
-Accessibility** and **Input Monitoring**, then restart the program.
 
 ## Settings
 

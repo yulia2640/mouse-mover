@@ -2,46 +2,50 @@
 Mouse Mover - keeps your computer awake by nudging the cursor.
 
 Hotkeys:
-    Ctrl+Alt+M  - start / stop moving the mouse
+    Ctrl+Alt+M  - start moving the mouse
     Ctrl+Alt+Q  - quit the program
+
+Any mouse click or key press stops it again.
 """
 
 import platform
 import subprocess
 import threading
+import time
 
 from pynput import keyboard, mouse
 
-TOGGLE_HOTKEY = "<ctrl>+<alt>+m"
+START_HOTKEY = "<ctrl>+<alt>+m"
 QUIT_HOTKEY = "<ctrl>+<alt>+q"
 INTERVAL_SECONDS = 30  # how often to nudge the mouse
 NUDGE_PIXELS = 1       # how far to move it (it moves back right away)
+GRACE_SECONDS = 1      # ignore input right after starting (the hotkey itself)
+
+SYSTEM = platform.system()
 
 cursor = mouse.Controller()
 active = threading.Event()
 stop = threading.Event()
-caffeinate = None  # macOS helper process
+started_at = 0.0
 
 
-def keep_awake(on):
-    """Ask the OS directly not to sleep (in addition to moving the mouse)."""
-    global caffeinate
-    system = platform.system()
-    if system == "Windows":
+def beep(frequency):
+    """Short sound so you know what happened (there is no window)."""
+    if SYSTEM == "Windows":
+        import winsound
+        winsound.Beep(frequency, 150)
+
+
+def tell_os_user_is_active():
+    """Reset the OS idle timer directly, in addition to moving the mouse."""
+    if SYSTEM == "Windows":
         import ctypes
-        ES_CONTINUOUS = 0x80000000
         ES_SYSTEM_REQUIRED = 0x00000001
         ES_DISPLAY_REQUIRED = 0x00000002
-        flags = ES_CONTINUOUS
-        if on:
-            flags |= ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED
-        ctypes.windll.kernel32.SetThreadExecutionState(flags)
-    elif system == "Darwin":
-        if on and caffeinate is None:
-            caffeinate = subprocess.Popen(["caffeinate", "-d", "-i"])
-        elif not on and caffeinate is not None:
-            caffeinate.terminate()
-            caffeinate = None
+        ctypes.windll.kernel32.SetThreadExecutionState(
+            ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED)
+    elif SYSTEM == "Darwin":
+        subprocess.Popen(["caffeinate", "-u", "-t", "1"])
 
 
 def mover_loop():
@@ -49,18 +53,29 @@ def mover_loop():
         if active.is_set():
             cursor.move(NUDGE_PIXELS, NUDGE_PIXELS)
             cursor.move(-NUDGE_PIXELS, -NUDGE_PIXELS)
+            tell_os_user_is_active()
         stop.wait(INTERVAL_SECONDS)
 
 
-def toggle():
-    if active.is_set():
-        active.clear()
-        keep_awake(False)
-        print("Mouse mover: OFF")
-    else:
+def activate():
+    global started_at
+    if not active.is_set():
+        started_at = time.monotonic()
         active.set()
-        keep_awake(True)
         print("Mouse mover: ON")
+        beep(1000)
+
+
+def deactivate(*_):
+    if active.is_set() and time.monotonic() - started_at > GRACE_SECONDS:
+        active.clear()
+        print("Mouse mover: OFF")
+        beep(500)
+
+
+def on_click(x, y, button, pressed):
+    if pressed:
+        deactivate()
 
 
 def quit_program():
@@ -69,14 +84,19 @@ def quit_program():
 
 def main():
     print("Mouse mover is running.")
-    print("  Ctrl+Alt+M  start / stop")
+    print("  Ctrl+Alt+M  start (any click or key press stops it)")
     print("  Ctrl+Alt+Q  quit")
     threading.Thread(target=mover_loop, daemon=True).start()
-    hotkeys = keyboard.GlobalHotKeys({
-        TOGGLE_HOTKEY: toggle,
-        QUIT_HOTKEY: quit_program,
-    })
-    hotkeys.start()
+    listeners = [
+        keyboard.GlobalHotKeys({
+            START_HOTKEY: activate,
+            QUIT_HOTKEY: quit_program,
+        }),
+        keyboard.Listener(on_press=deactivate),
+        mouse.Listener(on_click=on_click),
+    ]
+    for listener in listeners:
+        listener.start()
     try:
         while not stop.wait(0.5):
             pass
@@ -84,8 +104,8 @@ def main():
         stop.set()
     print("Quitting...")
     active.clear()
-    keep_awake(False)
-    hotkeys.stop()
+    for listener in listeners:
+        listener.stop()
 
 
 if __name__ == "__main__":
